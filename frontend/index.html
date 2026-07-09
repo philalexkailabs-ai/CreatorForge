@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>CreatorForge</title>
+
+    <style>
+
+        body{
+            font-family:Arial;
+            margin:40px;
+            background:#111;
+            color:white;
+        }
+
+        input{
+            width:500px;
+            padding:12px;
+            font-size:16px;
+        }
+
+        button{
+            padding:12px 20px;
+            font-size:16px;
+            cursor:pointer;
+            margin-left:10px;
+        }
+
+        li{
+            margin:10px 0;
+            padding:10px;
+            background:#222;
+            border-radius:8px;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<h1>🚀 CreatorForge</h1>
+
+<input
+id="topic"
+placeholder="Enter YouTube Topic">
+
+<button onclick="generate()">
+
+Generate
+
+</button>
+
+<hr>
+
+<ul id="results"></ul>
+
+<script>
+
+async function generate(){
+
+const topic=document.getElementById("topic").value;
+
+const response=await fetch("http://127.0.0.1:8000/generate/titles",{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({
+topic:topic
+})
+
+});
+
+const data=await response.json();
+
+const list=document.getElementById("results");
+
+list.innerHTML="";
+
+data.titles.forEach(title=>{
+
+const li=document.createElement("li");
+
+li.innerText=title;
+
+list.appendChild(li);
+
+});
+
+}
+
+</script>
+
+</body>
+
+</html>
