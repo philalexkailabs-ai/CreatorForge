@@ -1,100 +1,80 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-    <title>CreatorForge</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CreatorForge Studio</title>
 
-    <style>
-
-        body{
-            font-family:Arial;
-            margin:40px;
-            background:#111;
-            color:white;
-        }
-
-        input{
-            width:500px;
-            padding:12px;
-            font-size:16px;
-        }
-
-        button{
-            padding:12px 20px;
-            font-size:16px;
-            cursor:pointer;
-            margin-left:10px;
-        }
-
-        li{
-            margin:10px 0;
-            padding:10px;
-            background:#222;
-            border-radius:8px;
-        }
-
-    </style>
-
+    <link rel="stylesheet" href="css/style.css">
 </head>
-
 <body>
 
-<h1>🚀 CreatorForge</h1>
+<div class="container">
 
-<input
-id="topic"
-placeholder="Enter YouTube Topic">
+    <div class="sidebar">
 
-<button onclick="generate()">
+        <h2>🚀 CreatorForge</h2>
 
-Generate
+        <ul>
+            <li>🏠 Dashboard</li>
+            <li>🎬 Generate Project</li>
+            <li>📁 Saved Projects</li>
+            <li>⚙ Settings</li>
+        </ul>
 
-</button>
+    </div>
 
-<hr>
+    <div class="main">
 
-<ul id="results"></ul>
+        <h1>AI YouTube Studio</h1>
 
-<script>
+        <label>Video Topic</label>
 
-async function generate(){
+        <input
+            id="topic"
+            placeholder="Example: How to install Ollama on Windows">
 
-const topic=document.getElementById("topic").value;
+        <label>Select Model</label>
 
-const response=await fetch("http://127.0.0.1:8000/generate/titles",{
+        <select id="model">
+            <option>Balanced (Qwen3 8B)</option>
+            <option>Fast (Gemma3 4B)</option>
+            <option>Coding (Qwen2.5 Coder)</option>
+        </select>
 
-method:"POST",
+        <button onclick="generateProject()">
+            Generate Project
+        </button>
 
-headers:{
-"Content-Type":"application/json"
-},
+        <div class="results">
 
-body:JSON.stringify({
-topic:topic
-})
+            <div class="card">
+                <h2>Titles</h2>
+                <pre id="titles"></pre>
+            </div>
 
-});
+            <div class="card">
+                <h2>Script</h2>
+                <pre id="script"></pre>
+            </div>
 
-const data=await response.json();
+            <div class="card">
+                <h2>Description</h2>
+                <pre id="description"></pre>
+            </div>
 
-const list=document.getElementById("results");
+            <div class="card">
+                <h2>Tags</h2>
+                <pre id="tags"></pre>
+            </div>
 
-list.innerHTML="";
+        </div>
 
-data.titles.forEach(title=>{
+    </div>
 
-const li=document.createElement("li");
+</div>
 
-li.innerText=title;
-
-list.appendChild(li);
-
-});
-
-}
-
-</script>
+<script src="js/app.js"></script>
 
 </body>
-
 </html>
