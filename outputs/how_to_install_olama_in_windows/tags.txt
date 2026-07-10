@@ -1,0 +1,1 @@
+how to install Ollama in Windows, WSL2 setup, Docker installation, Ollama CLI, Run AI models on Windows, Local LLM deployment, Windows 10/11, Linux environment, Model inference, LLaMA setup, Mistral model, Ollama Docker, Windows WSL2, AI model installation, Docker WSL2 integration, Ollama tutorial, Windows AI setup, Local machine AI, Model compatibility, Ollama guide

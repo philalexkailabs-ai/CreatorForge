@@ -1,14 +1,22 @@
 import requests
 
-OLLAMA_URL = "http://localhost:11434/api/generate"
-
-MODEL = "qwen3:8b"
+from backend.config import DEFAULT_MODEL, OLLAMA_URL, SUPPORTED_MODELS
 
 
-def ask_ollama(prompt: str):
+class UnsupportedModelError(ValueError):
+    def __init__(self, model: str):
+        self.model = model
+        super().__init__(f"Unsupported model: {model}")
+
+
+def ask_ollama(prompt: str, model: str | None = None) -> str:
+    selected_model = model or DEFAULT_MODEL
+
+    if selected_model not in SUPPORTED_MODELS:
+        raise UnsupportedModelError(selected_model)
 
     payload = {
-        "model": MODEL,
+        "model": selected_model,
         "prompt": prompt,
         "stream": False
     }
