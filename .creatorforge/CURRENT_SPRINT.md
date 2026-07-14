@@ -48,8 +48,10 @@ without an explicit user action.
   `outputs/<project>/images/`.
 - [x] Persist video metadata and provide creator-initiated HTML5 preview.
 - [ ] Generate SRT subtitles. Deferred to a focused follow-up sprint.
-- [ ] AI Images and Mixed visual modes. The video metadata already reserves
-  these modes; provider integration remains unapproved.
+- [ ] AI Images and Mixed visual modes in the video renderer. Local ComfyUI
+  scene-image generation is approved and available as an additive project
+  capability; its generated images can be reviewed in `images/`. Video metadata
+  remains `user_images` until visual-mode selection is implemented.
 - [ ] Custom timeline editing, stock media, and generative video. Out of scope.
 
 FFmpeg must be installed locally and available on `PATH` (or configured through
@@ -71,10 +73,7 @@ mocked FFmpeg process; no FFmpeg binary is installed in this workspace.
 - A maintained local TTS tool for narration, subject to license and platform
   validation during 2A.1.
 - FFmpeg CLI for media assembly, encoding, subtitles, and image sequencing.
-- An approved local image-generation integration for AI Images. Its provider
-  boundary requires a focused architecture decision before implementation;
-  user-supplied and previously generated local images remain supported without
-  that integration.
+- Local ComfyUI for AI scene images through the dedicated client boundary.
 - Official YouTube Data API and OAuth 2.0 for upload. Do not automate the
   YouTube browser UI.
 

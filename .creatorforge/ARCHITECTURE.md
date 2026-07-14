@@ -6,8 +6,10 @@
 flowchart TD
     A[Frontend\nHTML, CSS, JavaScript] --> B[FastAPI]
     B --> C[Generator Service]
-    C --> D[Ollama Client]
-    D --> E[Local Ollama Model]
+C --> D[Ollama Client]
+D --> E[Local Ollama Model]
+C --> H[ComfyUI Client]
+H --> I[Local ComfyUI]
     B --> F[Project Services]
     F --> G[Outputs]
 ```
@@ -51,6 +53,12 @@ The static HTML, CSS, and JavaScript studio collects a topic and model, requests
 ### Ollama Client
 
 `backend/ollama.py` is the provider boundary. It reads model configuration, validates supported models, and sends prompt requests to local Ollama.
+
+### ComfyUI Client
+
+`backend/services/comfyui_client.py` is the sole REST boundary for local
+ComfyUI image generation. `image_service.py` owns image-scene orchestration and
+project artifact persistence.
 
 ### Project Services
 

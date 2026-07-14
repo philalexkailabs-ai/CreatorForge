@@ -41,3 +41,12 @@
 - **Status:** Active
 - **Decision:** Build prompt context centrally inside `generator.py`.
 - **Reason:** It prevents duplicated prompt assembly and allows new context fields to be introduced consistently.
+
+## Local AI Image Provider Boundary
+
+- **Date:** 2026-07-15
+- **Status:** Active
+- **Decision:** Keep all ComfyUI REST communication in `comfyui_client.py`; keep
+  scene construction and project image artifact persistence in `image_service.py`.
+- **Reason:** This provides an explicit, narrow local provider boundary while
+  preserving the existing route and project-service architecture.

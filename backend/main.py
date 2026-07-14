@@ -29,6 +29,7 @@ from backend.services.project_service import (
 )
 from backend.services.tts_service import TTSServiceError, generate_voice
 from backend.services.video_service import VideoServiceError, render_project_video
+from backend.services.image_service import ImageServiceError, generate_project_images
 from backend.services.youtube_service import YouTubeServiceError, upload_project_video
 from backend.services.validator import (
     validate_description,
@@ -119,6 +120,14 @@ def video_service_error_handler(
     return JSONResponse(status_code=422, content={"detail": str(exc)})
 
 
+@app.exception_handler(ImageServiceError)
+def image_service_error_handler(
+    request: Request,
+    exc: ImageServiceError,
+) -> JSONResponse:
+    return JSONResponse(status_code=503, content={"detail": str(exc)})
+
+
 @app.exception_handler(YouTubeServiceError)
 def youtube_service_error_handler(
     request: Request,
@@ -165,6 +174,11 @@ def get_project_voice(project_id: str) -> FileResponse:
 @app.post("/projects/{project_id}/video")
 def generate_project_video(project_id: str) -> dict[str, object]:
     return render_project_video(project_id)
+
+
+@app.post("/projects/{project_id}/images")
+def generate_project_images_route(project_id: str) -> dict[str, object]:
+    return generate_project_images(project_id)
 
 
 @app.get("/projects/{project_id}/video")
