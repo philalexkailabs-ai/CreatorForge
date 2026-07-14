@@ -41,13 +41,13 @@ Focus: release readiness.
 
 ## v1.0
 
-Focus: multi-platform creator suite.
+The authoritative definition of v1.0 scope, feature packs, success criteria,
+risks, and release checklist is the [v1.0 Master Plan](V1_MASTER_PLAN.md).
 
-- [ ] YouTube long-form workflow.
-- [ ] Shorts workflow.
-- [ ] Blog, LinkedIn, X, and newsletter generation.
-- [ ] Brand voice and reusable templates.
-- [ ] Multi-model/provider workflow where approved.
+Focus: a dependable local-first, multi-platform creator workspace.
+
+- [ ] Complete the v1.0 feature packs and release checklist.
+- [ ] Preserve local-first operation and human approval as release principles.
 
 ## v2.0
 

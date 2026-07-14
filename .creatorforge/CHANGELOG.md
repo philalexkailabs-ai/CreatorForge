@@ -1,5 +1,11 @@
 # CreatorForge Changelog
 
+## Sprint 2A.1 — Voice Engine
+
+Added local Kokoro narration generation, `voice.wav` persistence and metadata,
+voice playback for generated and reopened projects, and mock-based regression
+coverage without Ollama.
+
 ## Sprint 0.6.4 — Research Distillation Engine
 
 Added a research-summary artifact, summary persistence and loading, summary UI card, and summary-led downstream context.

@@ -14,6 +14,10 @@ class ProjectMetadataError(Exception):
     pass
 
 
+class ProjectVoiceNotFoundError(Exception):
+    pass
+
+
 def list_projects() -> list[dict[str, str]]:
     projects = [
         _project_summary(project_path, _read_metadata(project_path))
@@ -48,9 +52,46 @@ def get_project(project_id: str) -> dict[str, object]:
                 "research_summary": project.get("research_summary", ""),
                 "outline": project.get("outline", ""),
                 "thumbnail_prompt": project.get("thumbnail_prompt", ""),
+                "voice": project.get("voice"),
             }
 
     raise ProjectNotFoundError("Project not found.")
+
+
+def get_project_directory(project_id: str) -> Path:
+    for project_path in _project_paths():
+        _, summary = _project_summary(project_path, _read_metadata(project_path))
+        if summary["id"] == project_id:
+            return project_path
+
+    raise ProjectNotFoundError("Project not found.")
+
+
+def get_voice_path(project_id: str) -> Path:
+    project = get_project(project_id)
+    voice = project.get("voice")
+    if not isinstance(voice, dict) or voice.get("path") != "voice.wav":
+        raise ProjectVoiceNotFoundError("Project narration is not available.")
+
+    voice_path = get_project_directory(project_id) / "voice.wav"
+    if not voice_path.is_file():
+        raise ProjectVoiceNotFoundError("Project narration is not available.")
+
+    return voice_path
+
+
+def save_voice_metadata(project_id: str, voice: dict[str, object]) -> None:
+    project_path = get_project_directory(project_id)
+    project = _read_project_data(project_path)
+    _validate_project_data(project)
+    project["voice"] = voice
+    project["last_modified"] = datetime.now(timezone.utc).isoformat().replace(
+        "+00:00",
+        "Z",
+    )
+
+    with (project_path / "project.json").open("w", encoding="utf-8") as project_file:
+        json.dump(project, project_file, indent=4, ensure_ascii=False)
 
 
 def _project_paths() -> list[Path]:
@@ -149,6 +190,20 @@ def _validate_project_data(project: dict[str, object]) -> None:
     ):
         if field in project and not isinstance(project[field], str):
             raise ProjectMetadataError(f"Project field '{field}' is invalid.")
+
+    voice = project.get("voice")
+    if voice is not None:
+        if not isinstance(voice, dict):
+            raise ProjectMetadataError("Project voice metadata is invalid.")
+        if voice.get("path") != "voice.wav":
+            raise ProjectMetadataError("Project voice path is invalid.")
+        if not isinstance(voice.get("provider"), str):
+            raise ProjectMetadataError("Project voice provider is invalid.")
+        if not isinstance(voice.get("sample_rate"), int):
+            raise ProjectMetadataError("Project voice sample rate is invalid.")
+        duration = voice.get("duration_seconds")
+        if duration is not None and not isinstance(duration, (int, float)):
+            raise ProjectMetadataError("Project voice duration is invalid.")
 
 
 def _fallback_timestamp(project_path: Path) -> datetime:

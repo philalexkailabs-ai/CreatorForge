@@ -8,7 +8,7 @@ from uuid import uuid4
 OUTPUT_DIR = "outputs"
 
 
-def save_project(topic: str, project: dict[str, Any]) -> None:
+def save_project(topic: str, project: dict[str, Any]) -> dict[str, Any]:
 
     folder_name = topic.replace(" ", "_")
 
@@ -17,11 +17,13 @@ def save_project(topic: str, project: dict[str, Any]) -> None:
     os.makedirs(project_path, exist_ok=True)
 
     now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    project_id = project.get("id")
+    created = project.get("created")
     saved_project = {
         **project,
-        "id": str(uuid4()),
+        "id": project_id if isinstance(project_id, str) and project_id else str(uuid4()),
         "topic": topic,
-        "created": now,
+        "created": created if isinstance(created, str) and created else now,
         "last_modified": now,
         "generator_version": "0.5.3",
     }
@@ -52,3 +54,5 @@ def save_project(topic: str, project: dict[str, Any]) -> None:
 
     with open(os.path.join(project_path, "thumbnail.md"), "w", encoding="utf-8") as f:
         f.write(project.get("thumbnail_prompt", ""))
+
+    return saved_project

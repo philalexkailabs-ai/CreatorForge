@@ -5,6 +5,7 @@ const generationStages = [
     "Outline",
     "Titles",
     "Script",
+    "Voice",
     "Description",
     "Tags",
     "Thumbnail",
@@ -51,7 +52,8 @@ async function generateProject() {
         renderGenerationProgress("Completed", false);
 
         projectCache.clear();
-        loadProjects();
+        const generatedProjectId = await loadProjects(topic);
+        setVoicePlayer(generatedProjectId, true);
 
         document.getElementById("titles").textContent =
             data.titles.join("\n");
@@ -85,7 +87,7 @@ async function generateProject() {
 
 }
 
-async function loadProjects() {
+async function loadProjects(preferredTopic = "") {
 
     const projectList = document.getElementById("project-list");
 
@@ -104,14 +106,41 @@ async function loadProjects() {
             const item = document.createElement("li");
             item.textContent = project.name;
             item.addEventListener("click", () => loadProject(project.id));
+
+            const exportButton = document.createElement("button");
+            exportButton.type = "button";
+            exportButton.textContent = "Export";
+            exportButton.addEventListener("click", (event) => {
+                event.stopPropagation();
+                exportProject(project.id);
+            });
+            item.appendChild(exportButton);
             projectList.appendChild(item);
         });
+
+        const preferredProject = projects.find(
+            (project) => project.topic === preferredTopic
+        );
+        return preferredProject ? preferredProject.id : null;
 
     } catch (err) {
 
         console.error(err);
+        return null;
 
     }
+
+}
+
+function exportProject(projectId) {
+
+    const downloadLink = document.createElement("a");
+    downloadLink.href =
+        `http://127.0.0.1:8000/projects/${encodeURIComponent(projectId)}/export`;
+    downloadLink.download = "";
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    downloadLink.remove();
 
 }
 
@@ -182,6 +211,7 @@ function renderGenerationProgress(stage, running) {
 document.addEventListener("DOMContentLoaded", () => {
     loadProjects();
     renderGenerationProgress("Idle", false);
+    document.getElementById("play-voice").addEventListener("click", playVoice);
 });
 
 async function loadProject(projectId) {
@@ -214,6 +244,7 @@ async function loadProject(projectId) {
         document.getElementById("outline").textContent = project.outline;
         document.getElementById("thumbnail-prompt").textContent =
             project.thumbnail_prompt;
+        setVoicePlayer(project.id, Boolean(project.voice));
 
     } catch (err) {
 
@@ -221,6 +252,28 @@ async function loadProject(projectId) {
         alert("Cannot load saved CreatorForge project.");
 
     }
+
+}
+
+function setVoicePlayer(projectId, available) {
+
+    const playVoiceButton = document.getElementById("play-voice");
+    playVoiceButton.disabled = !available || !projectId;
+    playVoiceButton.dataset.projectId = available ? projectId : "";
+
+}
+
+function playVoice() {
+
+    const projectId = document.getElementById("play-voice").dataset.projectId;
+    if (!projectId) {
+        return;
+    }
+
+    const narration = new Audio(
+        `http://127.0.0.1:8000/projects/${encodeURIComponent(projectId)}/voice`
+    );
+    narration.play().catch((error) => console.error(error));
 
 }
 

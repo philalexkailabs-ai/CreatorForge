@@ -1,6 +1,8 @@
+import logging
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 from backend.ollama import UnsupportedModelError
 from backend.services.generator import (
@@ -14,12 +16,28 @@ from backend.services.generator import (
     generate_titles as generate_titles_content,
 )
 from backend.services.project_saver import save_project
+from backend.services.export_service import create_project_export
 from backend.services.project_service import (
     ProjectMetadataError,
     ProjectNotFoundError,
+    ProjectVoiceNotFoundError,
+    get_voice_path,
     get_project as get_saved_project,
     list_projects as list_saved_projects,
 )
+from backend.services.tts_service import TTSServiceError, generate_voice
+from backend.services.validator import (
+    validate_description,
+    validate_outline,
+    validate_research,
+    validate_research_summary,
+    validate_script,
+    validate_tags,
+    validate_thumbnail,
+    validate_titles,
+)
+
+logger = logging.getLogger(__name__)
 app = FastAPI(title="CreatorForge")
 generation_status = {
     "running": False,
@@ -65,6 +83,22 @@ def project_metadata_handler(
     return JSONResponse(status_code=500, content={"detail": str(exc)})
 
 
+@app.exception_handler(ProjectVoiceNotFoundError)
+def project_voice_not_found_handler(
+    request: Request,
+    exc: ProjectVoiceNotFoundError,
+) -> JSONResponse:
+    return JSONResponse(status_code=404, content={"detail": str(exc)})
+
+
+@app.exception_handler(TTSServiceError)
+def tts_service_error_handler(
+    request: Request,
+    exc: TTSServiceError,
+) -> JSONResponse:
+    return JSONResponse(status_code=503, content={"detail": str(exc)})
+
+
 @app.get("/")
 def home():
     return {"message": "CreatorForge Running 🚀"}
@@ -83,6 +117,21 @@ def get_generation_status() -> dict[str, object]:
 @app.get("/projects/{project_id}")
 def get_project(project_id: str) -> dict[str, object]:
     return get_saved_project(project_id)
+
+
+@app.get("/projects/{project_id}/export")
+def export_project(project_id: str) -> FileResponse:
+    archive_path = create_project_export(project_id)
+    return FileResponse(
+        archive_path,
+        media_type="application/zip",
+        filename=f"creatorforge-project-{project_id}.zip",
+    )
+
+
+@app.get("/projects/{project_id}/voice")
+def get_project_voice(project_id: str) -> FileResponse:
+    return FileResponse(get_voice_path(project_id), media_type="audio/wav")
 
 
 @app.post("/generate/titles")
@@ -141,6 +190,21 @@ def generate_project(request: TopicRequest):
             titles=titles,
         )
 
+        project = {
+            "titles": titles,
+            "script": script,
+            "description": "",
+            "tags": [],
+            "research": research,
+            "research_summary": research_summary,
+            "outline": outline,
+            "thumbnail_prompt": "",
+        }
+        saved_project = save_project(request.topic, project)
+
+        generation_status["stage"] = "Voice"
+        voice = generate_voice(saved_project["id"])
+
         generation_status["stage"] = "Description"
         description = generate_description_content(
             request.topic,
@@ -178,9 +242,32 @@ def generate_project(request: TopicRequest):
             "outline": outline,
             "thumbnail_prompt": thumbnail_prompt,
         }
+        saved_project = save_project(
+            request.topic,
+            {
+                **project,
+                "id": saved_project["id"],
+                "created": saved_project["created"],
+                "voice": voice,
+            },
+        )
+
+        validation_results = {
+            "research": validate_research(research),
+            "research_summary": validate_research_summary(research_summary),
+            "outline": validate_outline(outline),
+            "titles": validate_titles(titles),
+            "script": validate_script(script),
+            "description": validate_description(description),
+            "tags": validate_tags(tags),
+            "thumbnail_prompt": validate_thumbnail(thumbnail_prompt),
+        }
+
+        for artifact, result in validation_results.items():
+            if not result["valid"]:
+                logger.warning("Validation failed for %s: %s", artifact, result)
 
         generation_status["stage"] = "Saving"
-        save_project(request.topic, project)
 
         generation_status.update(running=False, stage="Completed")
         return project
