@@ -1,5 +1,11 @@
 # CreatorForge Changelog
 
+## Sprint 2A.2 — Local Video Engine
+
+Added local FFmpeg video rendering from `voice.wav` and creator-supplied
+project images, persisted MP4 metadata, and generate/preview video controls.
+AI Images and Mixed visual modes remain deferred.
+
 ## Sprint 2A.1 — Voice Engine
 
 Added local Kokoro narration generation, `voice.wav` persistence and metadata,

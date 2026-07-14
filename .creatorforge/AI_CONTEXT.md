@@ -18,6 +18,8 @@ Sprint 0.6.4, Research Distillation Engine, is completed. See [Current Sprint](C
 - Prompt quality and lightweight output cleanup.
 - Local Kokoro narration generation, project voice metadata, and creator-led
   WAV playback.
+- Local FFmpeg video rendering from project narration and creator-supplied
+  images, with persisted video metadata and HTML5 preview.
 
 ## Future Roadmap
 

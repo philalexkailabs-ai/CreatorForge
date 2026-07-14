@@ -21,11 +21,14 @@ from backend.services.project_service import (
     ProjectMetadataError,
     ProjectNotFoundError,
     ProjectVoiceNotFoundError,
+    ProjectVideoNotFoundError,
+    get_video_path,
     get_voice_path,
     get_project as get_saved_project,
     list_projects as list_saved_projects,
 )
 from backend.services.tts_service import TTSServiceError, generate_voice
+from backend.services.video_service import VideoServiceError, render_project_video
 from backend.services.validator import (
     validate_description,
     validate_outline,
@@ -99,6 +102,22 @@ def tts_service_error_handler(
     return JSONResponse(status_code=503, content={"detail": str(exc)})
 
 
+@app.exception_handler(ProjectVideoNotFoundError)
+def project_video_not_found_handler(
+    request: Request,
+    exc: ProjectVideoNotFoundError,
+) -> JSONResponse:
+    return JSONResponse(status_code=404, content={"detail": str(exc)})
+
+
+@app.exception_handler(VideoServiceError)
+def video_service_error_handler(
+    request: Request,
+    exc: VideoServiceError,
+) -> JSONResponse:
+    return JSONResponse(status_code=422, content={"detail": str(exc)})
+
+
 @app.get("/")
 def home():
     return {"message": "CreatorForge Running 🚀"}
@@ -132,6 +151,16 @@ def export_project(project_id: str) -> FileResponse:
 @app.get("/projects/{project_id}/voice")
 def get_project_voice(project_id: str) -> FileResponse:
     return FileResponse(get_voice_path(project_id), media_type="audio/wav")
+
+
+@app.post("/projects/{project_id}/video")
+def generate_project_video(project_id: str) -> dict[str, object]:
+    return render_project_video(project_id)
+
+
+@app.get("/projects/{project_id}/video")
+def get_project_video(project_id: str) -> FileResponse:
+    return FileResponse(get_video_path(project_id), media_type="video/mp4")
 
 
 @app.post("/generate/titles")

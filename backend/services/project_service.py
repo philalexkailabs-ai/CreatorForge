@@ -18,6 +18,10 @@ class ProjectVoiceNotFoundError(Exception):
     pass
 
 
+class ProjectVideoNotFoundError(Exception):
+    pass
+
+
 def list_projects() -> list[dict[str, str]]:
     projects = [
         _project_summary(project_path, _read_metadata(project_path))
@@ -53,6 +57,7 @@ def get_project(project_id: str) -> dict[str, object]:
                 "outline": project.get("outline", ""),
                 "thumbnail_prompt": project.get("thumbnail_prompt", ""),
                 "voice": project.get("voice"),
+                "video": project.get("video"),
             }
 
     raise ProjectNotFoundError("Project not found.")
@@ -81,10 +86,35 @@ def get_voice_path(project_id: str) -> Path:
 
 
 def save_voice_metadata(project_id: str, voice: dict[str, object]) -> None:
+    _save_media_metadata(project_id, "voice", voice)
+
+
+def get_video_path(project_id: str) -> Path:
+    project = get_project(project_id)
+    video = project.get("video")
+    if not isinstance(video, dict) or video.get("path") != "video.mp4":
+        raise ProjectVideoNotFoundError("Project video is not available.")
+
+    video_path = get_project_directory(project_id) / "video.mp4"
+    if not video_path.is_file():
+        raise ProjectVideoNotFoundError("Project video is not available.")
+
+    return video_path
+
+
+def save_video_metadata(project_id: str, video: dict[str, object]) -> None:
+    _save_media_metadata(project_id, "video", video)
+
+
+def _save_media_metadata(
+    project_id: str,
+    field: str,
+    metadata: dict[str, object],
+) -> None:
     project_path = get_project_directory(project_id)
     project = _read_project_data(project_path)
     _validate_project_data(project)
-    project["voice"] = voice
+    project[field] = metadata
     project["last_modified"] = datetime.now(timezone.utc).isoformat().replace(
         "+00:00",
         "Z",
@@ -204,6 +234,24 @@ def _validate_project_data(project: dict[str, object]) -> None:
         duration = voice.get("duration_seconds")
         if duration is not None and not isinstance(duration, (int, float)):
             raise ProjectMetadataError("Project voice duration is invalid.")
+
+    video = project.get("video")
+    if video is not None:
+        if not isinstance(video, dict):
+            raise ProjectMetadataError("Project video metadata is invalid.")
+        if video.get("path") != "video.mp4":
+            raise ProjectMetadataError("Project video path is invalid.")
+        if video.get("visual_mode") not in {"user_images", "ai_images", "mixed"}:
+            raise ProjectMetadataError("Project video visual mode is invalid.")
+        for field in ("width", "height", "fps", "image_count"):
+            if not isinstance(video.get(field), int):
+                raise ProjectMetadataError(f"Project video field '{field}' is invalid.")
+        for field in ("video_codec", "audio_codec"):
+            if not isinstance(video.get(field), str):
+                raise ProjectMetadataError(f"Project video field '{field}' is invalid.")
+        duration = video.get("duration_seconds")
+        if not isinstance(duration, (int, float)):
+            raise ProjectMetadataError("Project video duration is invalid.")
 
 
 def _fallback_timestamp(project_path: Path) -> datetime:

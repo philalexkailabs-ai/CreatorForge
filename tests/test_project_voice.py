@@ -68,6 +68,43 @@ class ProjectVoiceTests(unittest.TestCase):
 
             self.assertIsNone(project["voice"])
 
+    def test_video_metadata_is_persisted_and_reopened(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            output_directory = Path(temporary_directory)
+            project_directory = output_directory / "project"
+            project_directory.mkdir()
+            project_data = {
+                "id": "project-1",
+                "topic": "Video test",
+                "created": "2026-07-14T00:00:00Z",
+                "last_modified": "2026-07-14T00:00:00Z",
+                "generator_version": "0.6.0",
+            }
+            (project_directory / "project.json").write_text(
+                json.dumps(project_data),
+                encoding="utf-8",
+            )
+            (project_directory / "video.mp4").write_bytes(b"mp4")
+            video = {
+                "path": "video.mp4",
+                "visual_mode": "user_images",
+                "width": 1920,
+                "height": 1080,
+                "fps": 30,
+                "video_codec": "h264",
+                "audio_codec": "aac",
+                "duration_seconds": 1.0,
+                "image_count": 1,
+            }
+
+            with patch.object(project_service, "OUTPUT_DIR", str(output_directory)):
+                project_service.save_video_metadata("project-1", video)
+                reopened_project = project_service.get_project("project-1")
+                video_path = project_service.get_video_path("project-1")
+
+            self.assertEqual(reopened_project["video"], video)
+            self.assertEqual(video_path.name, "video.mp4")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -54,6 +54,7 @@ async function generateProject() {
         projectCache.clear();
         const generatedProjectId = await loadProjects(topic);
         setVoicePlayer(generatedProjectId, true);
+        setVideoControls(generatedProjectId, true, false);
 
         document.getElementById("titles").textContent =
             data.titles.join("\n");
@@ -212,6 +213,14 @@ document.addEventListener("DOMContentLoaded", () => {
     loadProjects();
     renderGenerationProgress("Idle", false);
     document.getElementById("play-voice").addEventListener("click", playVoice);
+    document.getElementById("generate-video").addEventListener(
+        "click",
+        generateVideo
+    );
+    document.getElementById("preview-video").addEventListener(
+        "click",
+        previewVideo
+    );
 });
 
 async function loadProject(projectId) {
@@ -245,6 +254,7 @@ async function loadProject(projectId) {
         document.getElementById("thumbnail-prompt").textContent =
             project.thumbnail_prompt;
         setVoicePlayer(project.id, Boolean(project.voice));
+        setVideoControls(project.id, Boolean(project.voice), Boolean(project.video));
 
     } catch (err) {
 
@@ -274,6 +284,63 @@ function playVoice() {
         `http://127.0.0.1:8000/projects/${encodeURIComponent(projectId)}/voice`
     );
     narration.play().catch((error) => console.error(error));
+
+}
+
+function setVideoControls(projectId, hasVoice, hasVideo) {
+
+    const generateVideoButton = document.getElementById("generate-video");
+    const previewVideoButton = document.getElementById("preview-video");
+    generateVideoButton.disabled = !hasVoice || !projectId;
+    previewVideoButton.disabled = !hasVideo || !projectId;
+    generateVideoButton.dataset.projectId = hasVoice ? projectId : "";
+    previewVideoButton.dataset.projectId = hasVideo ? projectId : "";
+
+}
+
+async function generateVideo() {
+
+    const projectId = document.getElementById("generate-video").dataset.projectId;
+    if (!projectId) {
+        return;
+    }
+
+    try {
+
+        const response = await fetch(
+            `http://127.0.0.1:8000/projects/${encodeURIComponent(projectId)}/video`,
+            { method: "POST" }
+        );
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.detail || "Could not generate video.");
+        }
+
+        projectCache.delete(projectId);
+        setVideoControls(projectId, true, true);
+        previewVideo();
+
+    } catch (err) {
+
+        console.error(err);
+        alert(err.message || "Cannot generate CreatorForge video.");
+
+    }
+
+}
+
+function previewVideo() {
+
+    const projectId = document.getElementById("preview-video").dataset.projectId;
+    if (!projectId) {
+        return;
+    }
+
+    const videoPreview = document.getElementById("video-preview");
+    videoPreview.src =
+        `http://127.0.0.1:8000/projects/${encodeURIComponent(projectId)}/video`;
+    videoPreview.hidden = false;
+    videoPreview.load();
 
 }
 

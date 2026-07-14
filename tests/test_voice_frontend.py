@@ -14,6 +14,11 @@ class VoiceFrontendTests(unittest.TestCase):
         self.assertIn("function playVoice()", javascript)
         self.assertIn("/projects/${encodeURIComponent(projectId)}/voice", javascript)
         self.assertIn("narration.play()", javascript)
+        self.assertIn('id="generate-video"', html)
+        self.assertIn('id="video-preview"', html)
+        self.assertIn("function generateVideo()", javascript)
+        self.assertIn("function previewVideo()", javascript)
+        self.assertIn("/projects/${encodeURIComponent(projectId)}/video", javascript)
 
 
 if __name__ == "__main__":

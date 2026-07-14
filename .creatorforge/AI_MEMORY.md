@@ -18,6 +18,8 @@ CreatorForge is a local-first AI content studio with a static HTML/CSS/JavaScrip
 - Session-only project caching and live generation progress.
 - Local Kokoro narration saved as `voice.wav`, with persisted metadata and
   creator-initiated playback.
+- Local FFmpeg rendering of `video.mp4` from `voice.wav` and user images in a
+  project `images/` folder, with metadata and creator-initiated preview.
 
 ## Things Never to Change Without Approval
 
