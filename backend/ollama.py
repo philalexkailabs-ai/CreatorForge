@@ -1,3 +1,4 @@
+import os
 import requests
 
 from backend.config import DEFAULT_MODEL, OLLAMA_URL, SUPPORTED_MODELS
@@ -21,7 +22,11 @@ def ask_ollama(prompt: str, model: str | None = None) -> str:
         "stream": False
     }
 
-    response = requests.post(OLLAMA_URL, json=payload)
+    response = requests.post(
+        os.getenv("CREATORFORGE_OLLAMA_URL", OLLAMA_URL),
+        json=payload,
+        timeout=120,
+    )
 
     response.raise_for_status()
 

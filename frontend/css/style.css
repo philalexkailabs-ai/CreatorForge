@@ -91,3 +91,8 @@ button:hover{
 pre{
     white-space:pre-wrap;
 }
+
+body[data-theme="light"]{
+    background:#e2e8f0;
+    color:#111827;
+}

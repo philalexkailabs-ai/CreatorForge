@@ -227,6 +227,8 @@ CreatorForge maintains a project knowledge base for developers and AI agents:
 - [Engineering Decisions](.creatorforge/DECISIONS.md)
 - [Coding Standard](.creatorforge/CODING_STANDARD.md)
 - [Contributing Guide](.creatorforge/CONTRIBUTING.md)
+- [Installation Guide](docs/installation-guide.md)
+- [Release Notes](docs/release-notes.md)
 
 ## Contributing
 

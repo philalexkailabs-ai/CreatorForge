@@ -1,4 +1,5 @@
 import json
+import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 from uuid import NAMESPACE_URL, uuid5
@@ -22,13 +23,63 @@ class ProjectVideoNotFoundError(Exception):
     pass
 
 
-def list_projects() -> list[dict[str, str]]:
+def list_projects(search: str = "", sort: str = "updated") -> list[dict[str, str]]:
     projects = [
         _project_summary(project_path, _read_metadata(project_path))
         for project_path in _project_paths()
     ]
 
-    return [project for _, project in sorted(projects, reverse=True, key=lambda item: item[0])]
+    filtered = [item for item in projects if search.casefold() in item[1]["name"].casefold()]
+    if sort == "name":
+        filtered.sort(key=lambda item: item[1]["name"].casefold())
+    elif sort == "created":
+        filtered.sort(key=lambda item: item[1]["created"], reverse=True)
+    else:
+        filtered.sort(key=lambda item: item[0], reverse=True)
+    return [project for _, project in filtered]
+
+
+def rename_project(project_id: str, name: str) -> dict[str, object]:
+    if not name.strip():
+        raise ProjectMetadataError("Project name is required.")
+    return _update_project(project_id, {"name": name.strip()})
+
+
+def set_project_favorite(project_id: str, favorite: bool) -> dict[str, object]:
+    return _update_project(project_id, {"favorite": favorite})
+
+
+def duplicate_project(project_id: str, name: str | None = None) -> dict[str, str]:
+    source = get_project_directory(project_id)
+    target = source.parent / _safe_folder_name(name or f"{source.name} copy")
+    suffix = 2
+    while target.exists():
+        target = source.parent / _safe_folder_name(f"{name or source.name} copy {suffix}")
+        suffix += 1
+    shutil.copytree(source, target)
+    project = _read_project_data(target)
+    project["id"] = str(uuid5(NAMESPACE_URL, f"{target.as_posix()}-{datetime.now().isoformat()}"))
+    project["name"] = name.strip() if isinstance(name, str) and name.strip() else target.name
+    project["last_modified"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    with (target / "project.json").open("w", encoding="utf-8") as project_file:
+        json.dump(project, project_file, indent=4, ensure_ascii=False)
+    _, summary = _project_summary(target, project)
+    return summary
+
+
+def delete_project(project_id: str) -> None:
+    project_path = get_project_directory(project_id)
+    shutil.rmtree(project_path)
+
+
+def dashboard_metrics() -> dict[str, object]:
+    paths = _project_paths()
+    image_count = sum(len(list(path.glob("images/*"))) if (path / "images").is_dir() else 0 for path in paths)
+    videos = sum(1 for path in paths if (path / "video.mp4").is_file())
+    uploads = sum(1 for path in paths if (path / "youtube_upload.json").is_file())
+    voice_seconds = sum(_voice_duration(_read_metadata(path)) for path in paths)
+    disk_usage = sum(file.stat().st_size for path in paths for file in path.rglob("*") if file.is_file())
+    return {"projects": len(paths), "videos": videos, "images_generated": image_count, "voice_minutes": round(voice_seconds / 60, 2), "upload_count": uploads, "disk_usage_bytes": disk_usage}
 
 
 def get_project(project_id: str) -> dict[str, object]:
@@ -59,6 +110,7 @@ def get_project(project_id: str) -> dict[str, object]:
                 "voice": project.get("voice"),
                 "video": project.get("video"),
                 "youtube": project.get("youtube"),
+                "favorite": project.get("favorite", False),
             }
 
     raise ProjectNotFoundError("Project not found.")
@@ -136,6 +188,25 @@ def _save_media_metadata(
         json.dump(project, project_file, indent=4, ensure_ascii=False)
 
 
+def _update_project(project_id: str, values: dict[str, object]) -> dict[str, object]:
+    project_path = get_project_directory(project_id)
+    project = _read_project_data(project_path)
+    project.update(values)
+    project["last_modified"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    with (project_path / "project.json").open("w", encoding="utf-8") as project_file:
+        json.dump(project, project_file, indent=4, ensure_ascii=False)
+    return get_project(project_id)
+
+
+def _safe_folder_name(value: str) -> str:
+    return "_".join("".join(char for char in value if char.isalnum() or char in " _-").split()) or "project"
+
+
+def _voice_duration(metadata: dict[str, object]) -> float:
+    voice = metadata.get("voice")
+    return float(voice.get("duration_seconds", 0)) if isinstance(voice, dict) and isinstance(voice.get("duration_seconds", 0), (int, float)) else 0.0
+
+
 def _project_paths() -> list[Path]:
     output_path = Path(OUTPUT_DIR)
 
@@ -172,6 +243,7 @@ def _project_summary(
         "topic": topic,
         "created": created,
         "last_modified": last_modified,
+        "favorite": metadata.get("favorite") is True,
         "path": project_path.as_posix(),
     }
 

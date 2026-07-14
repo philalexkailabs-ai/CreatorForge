@@ -1,4 +1,5 @@
 import logging
+import os
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -26,7 +27,14 @@ from backend.services.project_service import (
     get_voice_path,
     get_project as get_saved_project,
     list_projects as list_saved_projects,
+    rename_project,
+    duplicate_project,
+    delete_project,
+    set_project_favorite,
+    dashboard_metrics,
 )
+from backend.services.settings_service import get_settings, save_settings
+from backend.services.diagnostics_service import get_diagnostics
 from backend.services.tts_service import TTSServiceError, generate_voice
 from backend.services.video_service import VideoServiceError, render_project_video
 from backend.services.image_service import (
@@ -67,6 +75,7 @@ app.add_middleware(
 class TopicRequest(BaseModel):
     topic: str
     model: str | None = None
+    full_pipeline: bool = False
 
 
 class ImageGenerationRequest(BaseModel):
@@ -82,6 +91,25 @@ class VideoRenderRequest(BaseModel):
     ken_burns: bool = False
     subtitles: bool = False
     background_music: bool = False
+
+
+class ProjectNameRequest(BaseModel):
+    name: str
+
+
+class FavoriteRequest(BaseModel):
+    favorite: bool
+
+
+class SettingsRequest(BaseModel):
+    ollama_url: str | None = None
+    comfyui_url: str | None = None
+    ffmpeg_path: str | None = None
+    tts_provider: str | None = None
+    default_model: str | None = None
+    workflow_template: str | None = None
+    theme: str | None = None
+    youtube_client_secrets: str | None = None
 
 
 @app.exception_handler(UnsupportedModelError)
@@ -165,8 +193,40 @@ def home():
 
 
 @app.get("/projects")
-def get_projects() -> list[dict[str, str]]:
-    return list_saved_projects()
+def get_projects(search: str = "", sort: str = "updated") -> list[dict[str, str]]:
+    return list_saved_projects(search, sort)
+
+
+@app.get("/dashboard")
+def get_dashboard() -> dict[str, object]:
+    return dashboard_metrics()
+
+
+@app.get("/settings")
+def get_application_settings() -> dict[str, object]:
+    return get_settings()
+
+
+@app.put("/settings")
+def update_application_settings(request: SettingsRequest) -> dict[str, object]:
+    saved = save_settings(request.model_dump(exclude_none=True))
+    environment = {
+        "CREATORFORGE_OLLAMA_URL": "ollama_url",
+        "CREATORFORGE_COMFYUI_URL": "comfyui_url",
+        "CREATORFORGE_FFMPEG_BIN": "ffmpeg_path",
+        "CREATORFORGE_TTS_PROVIDER": "tts_provider",
+        "CREATORFORGE_YOUTUBE_CLIENT_SECRETS": "youtube_client_secrets",
+    }
+    for variable, field in environment.items():
+        value = saved.get(field)
+        if isinstance(value, str) and value:
+            os.environ[variable] = value
+    return saved
+
+
+@app.get("/diagnostics")
+def get_startup_diagnostics() -> dict[str, object]:
+    return get_diagnostics()
 
 
 @app.get("/generation/status")
@@ -177,6 +237,26 @@ def get_generation_status() -> dict[str, object]:
 @app.get("/projects/{project_id}")
 def get_project(project_id: str) -> dict[str, object]:
     return get_saved_project(project_id)
+
+
+@app.put("/projects/{project_id}/name")
+def update_project_name(project_id: str, request: ProjectNameRequest) -> dict[str, object]:
+    return rename_project(project_id, request.name)
+
+
+@app.post("/projects/{project_id}/duplicate")
+def duplicate_saved_project(project_id: str, request: ProjectNameRequest | None = None) -> dict[str, str]:
+    return duplicate_project(project_id, request.name if request else None)
+
+
+@app.delete("/projects/{project_id}", status_code=204)
+def remove_project(project_id: str) -> None:
+    delete_project(project_id)
+
+
+@app.put("/projects/{project_id}/favorite")
+def update_project_favorite(project_id: str, request: FavoriteRequest) -> dict[str, object]:
+    return set_project_favorite(project_id, request.favorite)
 
 
 @app.get("/projects/{project_id}/export")
@@ -318,8 +398,10 @@ def generate_project(request: TopicRequest):
         }
         saved_project = save_project(request.topic, project)
 
-        generation_status["stage"] = "Voice"
-        voice = generate_voice(saved_project["id"])
+        voice: dict[str, object] | None = None
+        if not request.full_pipeline:
+            generation_status["stage"] = "Voice"
+            voice = generate_voice(saved_project["id"])
 
         generation_status["stage"] = "Description"
         description = generate_description_content(
@@ -364,9 +446,25 @@ def generate_project(request: TopicRequest):
                 **project,
                 "id": saved_project["id"],
                 "created": saved_project["created"],
-                "voice": voice,
+                **({"voice": voice} if voice else {}),
             },
         )
+
+        pipeline: dict[str, str] = {}
+        if request.full_pipeline:
+            for stage, action in (
+                ("Images", lambda: generate_project_images(saved_project["id"])),
+                ("Voice", lambda: generate_voice(saved_project["id"])),
+                ("Video", lambda: render_project_video(saved_project["id"], visual_mode="ai", subtitles=True)),
+                ("Upload", lambda: upload_project_video(saved_project["id"])),
+            ):
+                generation_status["stage"] = stage
+                try:
+                    action()
+                    pipeline[stage.casefold()] = "completed"
+                except (ImageServiceError, VideoServiceError, YouTubeServiceError) as error:
+                    logger.warning("Pipeline stage %s failed: %s", stage, error)
+                    pipeline[stage.casefold()] = str(error)
 
         validation_results = {
             "research": validate_research(research),
@@ -386,6 +484,6 @@ def generate_project(request: TopicRequest):
         generation_status["stage"] = "Saving"
 
         generation_status.update(running=False, stage="Completed")
-        return project
+        return {**project, "pipeline": pipeline}
     finally:
         generation_status.update(running=False, stage="Idle")

@@ -49,6 +49,23 @@
             Generate Project
         </button>
 
+        <div class="card" id="dashboard-card">
+            <h2>Dashboard</h2>
+            <pre id="dashboard-metrics">Loading...</pre>
+        </div>
+
+        <div class="card" id="settings-card">
+            <h2>Settings & Diagnostics</h2>
+            <label>ComfyUI URL</label>
+            <input id="setting-comfyui-url" placeholder="http://127.0.0.1:8188">
+            <label>FFmpeg Path</label>
+            <input id="setting-ffmpeg-path" placeholder="ffmpeg">
+            <label>Theme</label>
+            <select id="setting-theme"><option value="dark">Dark</option><option value="light">Light</option></select>
+            <button id="save-settings" type="button">Save Settings</button>
+            <pre id="diagnostics">Loading diagnostics...</pre>
+        </div>
+
         <button onclick="generateThumbnail()">
             Generate Thumbnail Prompt
         </button>

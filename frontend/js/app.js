@@ -5,7 +5,10 @@ const generationStages = [
     "Outline",
     "Titles",
     "Script",
+    "Images",
     "Voice",
+    "Video",
+    "Upload",
     "Description",
     "Tags",
     "Thumbnail",
@@ -42,7 +45,8 @@ async function generateProject() {
             },
             body: JSON.stringify({
                 topic: topic,
-                model: model
+                model: model,
+                full_pipeline: true
             })
         });
 
@@ -212,6 +216,8 @@ function renderGenerationProgress(stage, running) {
 
 document.addEventListener("DOMContentLoaded", () => {
     loadProjects();
+    loadDashboard();
+    loadSettings();
     renderGenerationProgress("Idle", false);
     document.getElementById("play-voice").addEventListener("click", playVoice);
     document.getElementById("generate-video").addEventListener(
@@ -226,7 +232,56 @@ document.addEventListener("DOMContentLoaded", () => {
         "click",
         uploadToYouTube
     );
+    document.getElementById("save-settings").addEventListener("click", saveSettings);
 });
+
+async function loadDashboard() {
+    try {
+        const response = await fetch("http://127.0.0.1:8000/dashboard");
+        const metrics = await response.json();
+        document.getElementById("dashboard-metrics").textContent =
+            `Projects: ${metrics.projects}\nVideos: ${metrics.videos}\nImages: ${metrics.images_generated}\nVoice Minutes: ${metrics.voice_minutes}\nUploads: ${metrics.upload_count}\nDisk: ${metrics.disk_usage_bytes} bytes`;
+    } catch (error) {
+        document.getElementById("dashboard-metrics").textContent = "Dashboard unavailable.";
+    }
+}
+
+async function loadSettings() {
+    try {
+        const [settingsResponse, diagnosticsResponse] = await Promise.all([
+            fetch("http://127.0.0.1:8000/settings"),
+            fetch("http://127.0.0.1:8000/diagnostics"),
+        ]);
+        const settings = await settingsResponse.json();
+        const diagnostics = await diagnosticsResponse.json();
+        document.getElementById("setting-comfyui-url").value = settings.comfyui_url;
+        document.getElementById("setting-ffmpeg-path").value = settings.ffmpeg_path;
+        document.getElementById("setting-theme").value = settings.theme;
+        document.body.dataset.theme = settings.theme;
+        document.getElementById("diagnostics").textContent = Object.entries(diagnostics)
+            .map(([name, value]) => `${value.status.toUpperCase()} ${name}: ${value.detail}`)
+            .join("\n");
+    } catch (error) {
+        document.getElementById("diagnostics").textContent = "Diagnostics unavailable.";
+    }
+}
+
+async function saveSettings() {
+    const body = {
+        comfyui_url: document.getElementById("setting-comfyui-url").value,
+        ffmpeg_path: document.getElementById("setting-ffmpeg-path").value,
+        theme: document.getElementById("setting-theme").value,
+    };
+    const response = await fetch("http://127.0.0.1:8000/settings", {
+        method: "PUT", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body),
+    });
+    if (!response.ok) {
+        alert("Could not save settings.");
+        return;
+    }
+    document.body.dataset.theme = body.theme;
+    loadSettings();
+}
 
 async function loadProject(projectId) {
 
