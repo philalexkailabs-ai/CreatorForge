@@ -29,6 +29,7 @@ from backend.services.project_service import (
 )
 from backend.services.tts_service import TTSServiceError, generate_voice
 from backend.services.video_service import VideoServiceError, render_project_video
+from backend.services.youtube_service import YouTubeServiceError, upload_project_video
 from backend.services.validator import (
     validate_description,
     validate_outline,
@@ -118,6 +119,14 @@ def video_service_error_handler(
     return JSONResponse(status_code=422, content={"detail": str(exc)})
 
 
+@app.exception_handler(YouTubeServiceError)
+def youtube_service_error_handler(
+    request: Request,
+    exc: YouTubeServiceError,
+) -> JSONResponse:
+    return JSONResponse(status_code=503, content={"detail": str(exc)})
+
+
 @app.get("/")
 def home():
     return {"message": "CreatorForge Running 🚀"}
@@ -161,6 +170,11 @@ def generate_project_video(project_id: str) -> dict[str, object]:
 @app.get("/projects/{project_id}/video")
 def get_project_video(project_id: str) -> FileResponse:
     return FileResponse(get_video_path(project_id), media_type="video/mp4")
+
+
+@app.post("/projects/{project_id}/youtube-upload")
+def upload_project_to_youtube(project_id: str) -> dict[str, object]:
+    return upload_project_video(project_id)
 
 
 @app.post("/generate/titles")

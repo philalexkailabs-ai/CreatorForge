@@ -58,6 +58,7 @@ def get_project(project_id: str) -> dict[str, object]:
                 "thumbnail_prompt": project.get("thumbnail_prompt", ""),
                 "voice": project.get("voice"),
                 "video": project.get("video"),
+                "youtube": project.get("youtube"),
             }
 
     raise ProjectNotFoundError("Project not found.")
@@ -104,6 +105,10 @@ def get_video_path(project_id: str) -> Path:
 
 def save_video_metadata(project_id: str, video: dict[str, object]) -> None:
     _save_media_metadata(project_id, "video", video)
+
+
+def save_youtube_metadata(project_id: str, youtube: dict[str, object]) -> None:
+    _save_media_metadata(project_id, "youtube", youtube)
 
 
 def _save_media_metadata(
@@ -252,6 +257,31 @@ def _validate_project_data(project: dict[str, object]) -> None:
         duration = video.get("duration_seconds")
         if not isinstance(duration, (int, float)):
             raise ProjectMetadataError("Project video duration is invalid.")
+
+    youtube = project.get("youtube")
+    if youtube is not None:
+        if not isinstance(youtube, dict):
+            raise ProjectMetadataError("Project YouTube metadata is invalid.")
+        for field in (
+            "video_id",
+            "video_url",
+            "upload_status",
+            "processing_status",
+            "privacy_status",
+            "title",
+            "description",
+            "thumbnail_prompt",
+            "category_id",
+        ):
+            if not isinstance(youtube.get(field), str):
+                raise ProjectMetadataError(
+                    f"Project YouTube field '{field}' is invalid."
+                )
+        if youtube.get("privacy_status") != "private":
+            raise ProjectMetadataError("Project YouTube privacy status is invalid.")
+        tags = youtube.get("tags")
+        if not isinstance(tags, list) or not all(isinstance(tag, str) for tag in tags):
+            raise ProjectMetadataError("Project YouTube tags are invalid.")
 
 
 def _fallback_timestamp(project_path: Path) -> datetime:

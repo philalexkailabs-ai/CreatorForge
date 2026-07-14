@@ -55,6 +55,7 @@ async function generateProject() {
         const generatedProjectId = await loadProjects(topic);
         setVoicePlayer(generatedProjectId, true);
         setVideoControls(generatedProjectId, true, false);
+        setYouTubeUploadControls(generatedProjectId, false, null);
 
         document.getElementById("titles").textContent =
             data.titles.join("\n");
@@ -221,6 +222,10 @@ document.addEventListener("DOMContentLoaded", () => {
         "click",
         previewVideo
     );
+    document.getElementById("upload-youtube").addEventListener(
+        "click",
+        uploadToYouTube
+    );
 });
 
 async function loadProject(projectId) {
@@ -255,6 +260,7 @@ async function loadProject(projectId) {
             project.thumbnail_prompt;
         setVoicePlayer(project.id, Boolean(project.voice));
         setVideoControls(project.id, Boolean(project.voice), Boolean(project.video));
+        setYouTubeUploadControls(project.id, Boolean(project.video), project.youtube);
 
     } catch (err) {
 
@@ -318,12 +324,72 @@ async function generateVideo() {
 
         projectCache.delete(projectId);
         setVideoControls(projectId, true, true);
+        setYouTubeUploadControls(projectId, true, null);
         previewVideo();
 
     } catch (err) {
 
         console.error(err);
         alert(err.message || "Cannot generate CreatorForge video.");
+
+    }
+
+}
+
+function setYouTubeUploadControls(projectId, hasVideo, upload) {
+
+    const uploadButton = document.getElementById("upload-youtube");
+    const uploadStatus = document.getElementById("youtube-upload-status");
+    const videoUrl = document.getElementById("youtube-video-url");
+    uploadButton.disabled = !hasVideo || !projectId;
+    uploadButton.dataset.projectId = hasVideo ? projectId : "";
+
+    if (!upload) {
+        uploadStatus.textContent = "";
+        videoUrl.hidden = true;
+        videoUrl.removeAttribute("href");
+        return;
+    }
+
+    uploadStatus.textContent =
+        `Upload Complete — Processing: ${upload.processing_status}`;
+    videoUrl.href = upload.video_url;
+    videoUrl.textContent = "Open YouTube Video";
+    videoUrl.hidden = false;
+
+}
+
+async function uploadToYouTube() {
+
+    const uploadButton = document.getElementById("upload-youtube");
+    const projectId = uploadButton.dataset.projectId;
+    if (!projectId || !window.confirm("Upload this video to YouTube as private?")) {
+        return;
+    }
+
+    const uploadStatus = document.getElementById("youtube-upload-status");
+    uploadButton.disabled = true;
+    uploadStatus.textContent = "Uploading...";
+
+    try {
+
+        const response = await fetch(
+            `http://127.0.0.1:8000/projects/${encodeURIComponent(projectId)}/youtube-upload`,
+            { method: "POST" }
+        );
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.detail || "Could not upload to YouTube.");
+        }
+
+        projectCache.delete(projectId);
+        setYouTubeUploadControls(projectId, true, data);
+
+    } catch (err) {
+
+        console.error(err);
+        uploadButton.disabled = false;
+        uploadStatus.textContent = err.message || "YouTube upload failed.";
 
     }
 

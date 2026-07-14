@@ -19,6 +19,11 @@ class VoiceFrontendTests(unittest.TestCase):
         self.assertIn("function generateVideo()", javascript)
         self.assertIn("function previewVideo()", javascript)
         self.assertIn("/projects/${encodeURIComponent(projectId)}/video", javascript)
+        self.assertIn('id="upload-youtube"', html)
+        self.assertIn('id="youtube-upload-status"', html)
+        self.assertIn("function uploadToYouTube()", javascript)
+        self.assertIn("Upload this video to YouTube as private?", javascript)
+        self.assertIn("/projects/${encodeURIComponent(projectId)}/youtube-upload", javascript)
 
 
 if __name__ == "__main__":

@@ -4,3 +4,6 @@ requests
 kokoro>=0.9.4
 numpy
 soundfile
+google-api-python-client
+google-auth-oauthlib
+google-auth-httplib2
