@@ -20,6 +20,18 @@ Show the Saved Projects sidebar containing project names and a reopened project 
 
 Use the sequence described in [Demo Guide](demo-guide.md).
 
+## AI Scenes — `assets/screenshots/ai-scenes.png`
+
+Show a saved scene manifest, scene prompt artifact, and generated image preview.
+
+## Video Review — `assets/screenshots/video-review.png`
+
+Show a locally rendered video preview with optional subtitles visible.
+
+## YouTube Upload — `assets/screenshots/youtube-upload.png`
+
+Show a completed private-upload status and the local receipt without exposing OAuth data.
+
 ## Capture Rules
 
 - Use a realistic but non-sensitive topic.

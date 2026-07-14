@@ -17,6 +17,7 @@ Focus: a usable local YouTube content studio.
 - [x] Saved project history and reopening.
 - [x] Model selection.
 - [x] Live generation progress.
+- [x] Local ComfyUI scene images with per-scene retry and manifests.
 - [ ] Manual artifact editing.
 - [ ] Project detail actions.
 
@@ -29,6 +30,8 @@ Focus: creator workflow refinement.
 - [ ] Brand voice and audience profiles.
 - [ ] Chapters, B-roll suggestions, and thumbnail variants.
 - [ ] Better error presentation and recovery.
+- [x] Opt-in visual rendering enhancements: subtitles, fades, Ken Burns, and
+  local background music.
 
 ## v0.8 RC
 

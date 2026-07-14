@@ -1,5 +1,13 @@
 # CreatorForge Changelog
 
+## Sprint 2A — Local Visual Delivery Reliability
+
+Added detailed scene manifests, per-scene AI image regeneration, placeholder
+workflow templates, bounded ComfyUI retries, and manual/AI/mixed visual modes.
+Added opt-in FFmpeg fades, Ken Burns, image durations, SRT subtitles, and local
+background music. YouTube uploads now save `youtube_upload.json` and offer an
+explicit retry route. All existing routes remain available.
+
 ## Sprint 2A.2 — Local Video Engine
 
 Added local FFmpeg video rendering from `voice.wav` and creator-supplied

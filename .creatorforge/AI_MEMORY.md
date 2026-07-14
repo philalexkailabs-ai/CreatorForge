@@ -20,6 +20,10 @@ CreatorForge is a local-first AI content studio with a static HTML/CSS/JavaScrip
   creator-initiated playback.
 - Local FFmpeg rendering of `video.mp4` from `voice.wav` and user images in a
   project `images/` folder, with metadata and creator-initiated preview.
+- Local ComfyUI scene plans with prompt artifacts, detailed scene manifests,
+  bounded retry, and individual-scene regeneration.
+- Opt-in FFmpeg subtitles, fade/zoom effects, image duration, and background
+  music, plus a non-secret `youtube_upload.json` upload receipt and retry.
 
 ## Things Never to Change Without Approval
 

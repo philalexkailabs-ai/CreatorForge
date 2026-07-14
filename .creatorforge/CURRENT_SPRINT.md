@@ -47,11 +47,9 @@ without an explicit user action.
 - [x] Support **User Images** only: creator-supplied JPG, PNG, or WebP files in
   `outputs/<project>/images/`.
 - [x] Persist video metadata and provide creator-initiated HTML5 preview.
-- [ ] Generate SRT subtitles. Deferred to a focused follow-up sprint.
-- [ ] AI Images and Mixed visual modes in the video renderer. Local ComfyUI
-  scene-image generation is approved and available as an additive project
-  capability; its generated images can be reviewed in `images/`. Video metadata
-  remains `user_images` until visual-mode selection is implemented.
+- [x] Generate an SRT subtitle artifact from planned script scenes when requested.
+- [x] Support opt-in manual, AI, and mixed visual-mode rendering while
+  preserving the original no-body user-image render behavior.
 - [ ] Custom timeline editing, stock media, and generative video. Out of scope.
 
 FFmpeg must be installed locally and available on `PATH` (or configured through
@@ -91,9 +89,8 @@ mocked FFmpeg process; no FFmpeg binary is installed in this workspace.
 ## Acceptance Criteria
 
 - [ ] A creator can select or provide narration for an existing project.
-- [ ] A creator can select User Images, AI Images, or Mixed visuals and see
-  the selected source clearly before rendering.
-- [ ] CreatorForge renders a playable 1080p MP4 and an SRT file locally.
+- [x] A creator can select User Images, AI Images, or Mixed visuals before rendering.
+- [x] CreatorForge renders a playable 1080p MP4 and optionally writes an SRT file locally.
 - [ ] The creator can review the rendered file before an upload control is
   available.
 - [ ] An explicit upload action performs OAuth consent and uploads the file as

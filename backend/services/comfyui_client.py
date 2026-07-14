@@ -4,12 +4,16 @@ from __future__ import annotations
 
 import os
 import time
+import logging
 from typing import Any
 from uuid import uuid4
 
 import requests
 
 from backend.config import COMFYUI_URL
+
+
+logger = logging.getLogger(__name__)
 
 
 class ComfyUIClientError(RuntimeError):
@@ -24,16 +28,30 @@ class ComfyUIClient:
         base_url: str | None = None,
         timeout_seconds: float = 120.0,
         poll_interval_seconds: float = 0.5,
+        max_attempts: int | None = None,
     ) -> None:
         self.base_url = (base_url or os.getenv("CREATORFORGE_COMFYUI_URL", COMFYUI_URL)).rstrip("/")
         self.timeout_seconds = timeout_seconds
         self.poll_interval_seconds = poll_interval_seconds
+        self.max_attempts = max_attempts or _configured_attempts()
 
     def generate_image(self, workflow: dict[str, Any]) -> bytes:
         """Submit a workflow, wait for it, and return its first output image."""
-        prompt_id = self.queue_prompt(workflow)
-        output = self.wait_for_output(prompt_id)
-        return self.download_image(output)
+        for attempt in range(1, self.max_attempts + 1):
+            try:
+                prompt_id = self.queue_prompt(workflow)
+                output = self.wait_for_output(prompt_id)
+                return self.download_image(output)
+            except ComfyUIClientError:
+                if attempt == self.max_attempts:
+                    raise
+                logger.warning(
+                    "ComfyUI image attempt %s of %s failed; retrying.",
+                    attempt,
+                    self.max_attempts,
+                )
+                time.sleep(min(self.poll_interval_seconds * attempt, 2.0))
+        raise ComfyUIClientError("ComfyUI image generation failed.")
 
     def queue_prompt(self, workflow: dict[str, Any]) -> str:
         try:
@@ -119,3 +137,11 @@ class ComfyUIClient:
                         result[field] = value
                 return result
         return None
+
+
+def _configured_attempts() -> int:
+    try:
+        return max(1, int(os.getenv("CREATORFORGE_COMFYUI_MAX_ATTEMPTS", "2")))
+    except ValueError:
+        logger.warning("Invalid CREATORFORGE_COMFYUI_MAX_ATTEMPTS; using 2.")
+        return 2

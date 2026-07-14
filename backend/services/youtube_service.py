@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import os
+import logging
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -8,6 +10,7 @@ from backend.services.project_service import (
     get_project as get_saved_project,
     get_video_path,
     save_youtube_metadata,
+    save_youtube_upload_artifact,
 )
 
 
@@ -18,6 +21,7 @@ PRIVATE_PRIVACY_STATUS = "private"
 DEFAULT_CATEGORY_ID = "22"
 DEFAULT_CLIENT_SECRETS_PATH = Path("local_config/youtube-client-secret.json")
 DEFAULT_TOKEN_PATH = Path("local_config/youtube-token.json")
+logger = logging.getLogger(__name__)
 
 
 class YouTubeServiceError(RuntimeError):
@@ -26,6 +30,7 @@ class YouTubeServiceError(RuntimeError):
 
 def upload_project_video(project_id: str) -> dict[str, object]:
     """Upload an existing project video after an explicit creator action."""
+    logger.info("Starting creator-approved YouTube upload project_id=%s", project_id)
     project = get_saved_project(project_id)
     video_path = get_video_path(project_id)
     upload_metadata = _build_upload_metadata(project)
@@ -55,10 +60,26 @@ def upload_project_video(project_id: str) -> dict[str, object]:
         "upload_status": "uploaded",
         "processing_status": _get_processing_status(youtube, video_id),
         "privacy_status": PRIVATE_PRIVACY_STATUS,
+        "uploaded_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         **upload_metadata,
     }
     save_youtube_metadata(project_id, metadata)
+    save_youtube_upload_artifact(
+        project_id,
+        {
+            "upload_timestamp": metadata["uploaded_at"],
+            "privacy": PRIVATE_PRIVACY_STATUS,
+            "video_id": metadata["video_id"],
+            "url": metadata["video_url"],
+            "processing_status": metadata["processing_status"],
+        },
+    )
     return metadata
+
+
+def retry_upload_project_video(project_id: str) -> dict[str, object]:
+    """Explicitly retry a failed or interrupted creator-approved upload."""
+    return upload_project_video(project_id)
 
 
 def _get_authenticated_youtube() -> Any:

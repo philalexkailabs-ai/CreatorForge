@@ -6,10 +6,10 @@
 flowchart TD
     A[Frontend\nHTML, CSS, JavaScript] --> B[FastAPI]
     B --> C[Generator Service]
-C --> D[Ollama Client]
-D --> E[Local Ollama Model]
-C --> H[ComfyUI Client]
-H --> I[Local ComfyUI]
+    C --> D[Ollama Client]
+    D --> E[Local Ollama Model]
+    C --> H[ComfyUI Client]
+    H --> I[Local ComfyUI]
     B --> F[Project Services]
     F --> G[Outputs]
 ```
@@ -63,6 +63,13 @@ project artifact persistence.
 ### Project Services
 
 `project_saver.py` persists generated artifacts and project metadata. `project_service.py` lists and opens projects, including graceful fallbacks for legacy project files.
+
+### Media Services
+
+`image_service.py` plans, regenerates, and persists project visual artifacts;
+`video_service.py` coordinates local FFmpeg rendering and optional subtitle or
+music inputs; `youtube_service.py` coordinates explicit uploads and persists a
+non-secret upload receipt.
 
 ### Outputs
 

@@ -111,6 +111,13 @@ def save_youtube_metadata(project_id: str, youtube: dict[str, object]) -> None:
     _save_media_metadata(project_id, "youtube", youtube)
 
 
+def save_youtube_upload_artifact(project_id: str, upload: dict[str, object]) -> None:
+    """Persist the creator-safe YouTube upload receipt beside project artifacts."""
+    project_path = get_project_directory(project_id)
+    with (project_path / "youtube_upload.json").open("w", encoding="utf-8") as upload_file:
+        json.dump(upload, upload_file, indent=2, ensure_ascii=False)
+
+
 def _save_media_metadata(
     project_id: str,
     field: str,

@@ -63,6 +63,19 @@ Topic → Research → Research Summary → Outline → Titles → Script
       → Description → Tags → Thumbnail Prompt → Saved Project
 ```
 
+### Media Architecture
+
+```text
+FastAPI routes -> image_service -> comfyui_client -> local ComfyUI
+FastAPI routes -> video_service -> local FFmpeg
+FastAPI routes -> youtube_service -> official YouTube API OAuth
+                         |
+                    project artifacts in outputs/
+```
+
+The original no-body voice, image, video, and upload routes remain available.
+New media controls are optional and creator-initiated.
+
 ## Screenshots
 
 Screenshots are coming soon:
@@ -129,6 +142,43 @@ python -m http.server 5500 --directory frontend
 ```
 
 Open `http://localhost:5500` in your browser and generate a project.
+
+## Local Media Setup
+
+### ComfyUI
+
+Install and start ComfyUI locally, then install the SDXL Turbo checkpoint named
+`sd_xl_turbo_1.0_fp16.safetensors` in its checkpoints directory. CreatorForge
+uses `http://127.0.0.1:8188` by default; set `CREATORFORGE_COMFYUI_URL` when
+your local server uses another address. `POST /projects/{id}/images` plans and
+generates one image per script scene. It writes `scene_manifest.json`,
+`scene_001.prompt.txt`, and `images/scene_001.png`. Use
+`POST /projects/{id}/images/{scene_number}/regenerate` to refresh only one
+scene. `biblical.json`, `business.json`, and `technology.json` are future
+workflow placeholders; SDXL Turbo is the implemented template.
+
+### Kokoro
+
+Kokoro is installed from `requirements.txt`. Its platform dependencies include
+espeak-ng. Set `CREATORFORGE_TTS_PROVIDER=kokoro` (the default), then use
+`POST /projects/{id}/voice` to regenerate narration from the saved script.
+
+### FFmpeg
+
+Install FFmpeg and make it available on `PATH`, or set
+`CREATORFORGE_FFMPEG_BIN` to the executable. The existing
+`POST /projects/{id}/video` behavior remains compatible. Its optional body can
+select `manual`, `ai`, or `mixed` visuals, subtitles, fades, Ken Burns, a fixed
+image duration, and local `background_music.mp3`/WAV/AAC/M4A.
+
+### YouTube OAuth
+
+Create a local OAuth desktop-client file and set
+`CREATORFORGE_YOUTUBE_CLIENT_SECRETS` to its path. Tokens default to
+`local_config/youtube-token.json` and should never be committed. Upload is an
+explicit private action through `POST /projects/{id}/youtube-upload`; an upload
+receipt is saved as `youtube_upload.json`. Retry only after creator review via
+`POST /projects/{id}/youtube-upload/retry`.
 
 ## Folder Structure
 

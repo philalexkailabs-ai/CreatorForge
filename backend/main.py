@@ -29,8 +29,16 @@ from backend.services.project_service import (
 )
 from backend.services.tts_service import TTSServiceError, generate_voice
 from backend.services.video_service import VideoServiceError, render_project_video
-from backend.services.image_service import ImageServiceError, generate_project_images
-from backend.services.youtube_service import YouTubeServiceError, upload_project_video
+from backend.services.image_service import (
+    ImageServiceError,
+    generate_project_images,
+    regenerate_project_image,
+)
+from backend.services.youtube_service import (
+    YouTubeServiceError,
+    retry_upload_project_video,
+    upload_project_video,
+)
 from backend.services.validator import (
     validate_description,
     validate_outline,
@@ -59,6 +67,21 @@ app.add_middleware(
 class TopicRequest(BaseModel):
     topic: str
     model: str | None = None
+
+
+class ImageGenerationRequest(BaseModel):
+    workflow: str = "sdxl_turbo.json"
+    visual_mode: str = "ai"
+    scene_duration_seconds: float = 5.0
+
+
+class VideoRenderRequest(BaseModel):
+    visual_mode: str = "manual"
+    image_duration_seconds: float | None = None
+    fade_transitions: bool = False
+    ken_burns: bool = False
+    subtitles: bool = False
+    background_music: bool = False
 
 
 @app.exception_handler(UnsupportedModelError)
@@ -172,13 +195,44 @@ def get_project_voice(project_id: str) -> FileResponse:
 
 
 @app.post("/projects/{project_id}/video")
-def generate_project_video(project_id: str) -> dict[str, object]:
-    return render_project_video(project_id)
+def generate_project_video(
+    project_id: str,
+    request: VideoRenderRequest | None = None,
+) -> dict[str, object]:
+    options = request or VideoRenderRequest()
+    return render_project_video(
+        project_id,
+        visual_mode=options.visual_mode,
+        image_duration_seconds=options.image_duration_seconds,
+        fade_transitions=options.fade_transitions,
+        ken_burns=options.ken_burns,
+        subtitles=options.subtitles,
+        background_music=options.background_music,
+    )
 
 
 @app.post("/projects/{project_id}/images")
-def generate_project_images_route(project_id: str) -> dict[str, object]:
-    return generate_project_images(project_id)
+def generate_project_images_route(
+    project_id: str,
+    request: ImageGenerationRequest | None = None,
+) -> dict[str, object]:
+    options = request or ImageGenerationRequest()
+    return generate_project_images(
+        project_id,
+        workflow_name=options.workflow,
+        visual_mode=options.visual_mode,
+        scene_duration_seconds=options.scene_duration_seconds,
+    )
+
+
+@app.post("/projects/{project_id}/images/{scene_number}/regenerate")
+def regenerate_project_image_route(project_id: str, scene_number: int) -> dict[str, object]:
+    return regenerate_project_image(project_id, scene_number)
+
+
+@app.post("/projects/{project_id}/voice")
+def regenerate_project_voice(project_id: str) -> dict[str, object]:
+    return generate_voice(project_id)
 
 
 @app.get("/projects/{project_id}/video")
@@ -189,6 +243,11 @@ def get_project_video(project_id: str) -> FileResponse:
 @app.post("/projects/{project_id}/youtube-upload")
 def upload_project_to_youtube(project_id: str) -> dict[str, object]:
     return upload_project_video(project_id)
+
+
+@app.post("/projects/{project_id}/youtube-upload/retry")
+def retry_project_youtube_upload(project_id: str) -> dict[str, object]:
+    return retry_upload_project_video(project_id)
 
 
 @app.post("/generate/titles")

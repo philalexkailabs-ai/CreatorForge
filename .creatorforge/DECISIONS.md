@@ -50,3 +50,13 @@
   scene construction and project image artifact persistence in `image_service.py`.
 - **Reason:** This provides an explicit, narrow local provider boundary while
   preserving the existing route and project-service architecture.
+
+## Additive Media Controls
+
+- **Date:** 2026-07-15
+- **Status:** Active
+- **Decision:** Expose scene regeneration, visual rendering options, and upload
+  retry as additive project routes with optional request bodies.
+- **Reason:** Existing creator workflows retain their original defaults while
+  individual media artifacts can be refreshed without regenerating research or
+  scripts.

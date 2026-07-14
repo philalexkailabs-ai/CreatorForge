@@ -22,6 +22,8 @@ Sprint 0.6.4, Research Distillation Engine, is completed. See [Current Sprint](C
   images, with persisted video metadata and HTML5 preview.
 - Local ComfyUI scene-image generation with per-project prompts, images, and a
   scene manifest.
+- Per-scene visual regeneration, opt-in local rendering enhancements, and
+  creator-approved YouTube upload receipts/retry.
 
 ## Future Roadmap
 

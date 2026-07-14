@@ -65,6 +65,7 @@ class YouTubeServiceTests(unittest.TestCase):
                 return_value=media_upload,
             ),
             patch.object(youtube_service, "save_youtube_metadata") as save_metadata,
+            patch.object(youtube_service, "save_youtube_upload_artifact") as save_artifact,
         ):
             result = youtube_service.upload_project_video("project-1")
 
@@ -75,6 +76,9 @@ class YouTubeServiceTests(unittest.TestCase):
         self.assertEqual(result["category_id"], "22")
         self.assertEqual(result["thumbnail_prompt"], "Bright creator thumbnail")
         save_metadata.assert_called_once_with("project-1", result)
+        upload_receipt = save_artifact.call_args.args[1]
+        self.assertEqual(upload_receipt["privacy"], "private")
+        self.assertEqual(upload_receipt["video_id"], "youtube-video-1")
 
         insert_kwargs = fake_youtube.videos_resource.insert_kwargs
         self.assertIsNotNone(insert_kwargs)
@@ -104,6 +108,12 @@ class YouTubeServiceTests(unittest.TestCase):
                 youtube_service.upload_project_video("project-1")
 
         authenticate.assert_not_called()
+
+    def test_retry_delegates_to_normal_explicit_upload(self) -> None:
+        with patch.object(youtube_service, "upload_project_video", return_value={"video_id": "retry"}) as upload:
+            result = youtube_service.retry_upload_project_video("project-1")
+        self.assertEqual(result["video_id"], "retry")
+        upload.assert_called_once_with("project-1")
 
 
 if __name__ == "__main__":

@@ -79,6 +79,30 @@ class VideoServiceTests(unittest.TestCase):
                 with self.assertRaises(video_service.VideoServiceError):
                     video_service.render_project_video("project-1")
 
+    def test_subtitles_transitions_and_music_are_added_to_command(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            project_directory = Path(temporary_directory)
+            subtitle_path = video_service._write_subtitles(
+                project_directory,
+                {"script": "First visual.\n\nSecond visual."},
+                4.0,
+            )
+            self.assertIn("00:00:04,000", subtitle_path.read_text())
+            command = video_service.build_ffmpeg_command(
+                project_directory / "images.ffconcat",
+                project_directory / "voice.wav",
+                project_directory / "video.mp4",
+                fade_transitions=True,
+                ken_burns=True,
+                subtitle_path=subtitle_path,
+                music_path=project_directory / "background_music.mp3",
+            )
+            filter_value = command[command.index("-filter_complex") + 1]
+            self.assertIn("fade=t=in", filter_value)
+            self.assertIn("zoompan", filter_value)
+            self.assertIn("subtitles=", filter_value)
+            self.assertIn("amix=inputs=2", filter_value)
+
 
 if __name__ == "__main__":
     unittest.main()
